@@ -1,0 +1,16 @@
+Vagrant.configure("2") do |config|
+  config.vm.box = "vith77/centos8-kernel6"
+  config.vm.box_version = "1.0"
+
+   config.vm.provider "virtualbox" do |vb|
+     # Display the VirtualBox GUI when booting the machine
+     vb.gui = true
+  
+     # Customize the amount of memory on the VM:
+     vb.memory = "1024"
+   end
+
+
+end
+
+
