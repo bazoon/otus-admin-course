@@ -1,0 +1,31 @@
+vagrant.configure("2") do |config|
+  config.vm.box = "generic/ubuntu2204"
+
+  # Define the VM
+  config.vm.define "node1" do |node|
+    # Configure the VM with 5 additional disks
+    (1..5).each do |i|
+      node.vm.provider "virtualbox" do |vb|
+        # Create the disk
+        disk_path = "./disk#{i}.vdi"
+        vb.customize ["createhd", "--filename", disk_path, "--size", 1024*10]
+
+        # Attach the disk to the VM
+        vb.customize ["storageattach", :id,
+                      "--storagectl", "SATA Controller",
+                      "--port", i,
+                      "--device", 0,
+                      "--type", "hdd",
+                      "--medium", disk_path]
+      end
+    end
+
+
+    node.vm.provision "shell", inline: <<-SHELL
+        mkdir -p ~root/.ssh
+              cp ~vagrant/.ssh/auth* ~root/.ssh
+        apt install -y mdadm smartmontools hdparm gdisk
+    SHELL
+  end
+end
+
