@@ -1,0 +1,55 @@
+# Vagrant.configure("2") do |config|
+#   config.vm.box = "generic/ubuntu2204" # Use Ubuntu 22.04 LTS
+#
+#   # config.vm.define "client" do |machine1|
+#   #   machine1.vm.hostname = "client"
+#   #   machine1.vm.network "private_network", ip: "192.168.56.10"
+#   # end
+#
+#   config.vm.define "backup" do |machine2|
+#     machine2.vm.hostname = "backup"
+#     machine2.vm.network "private_network", ip: "192.168.56.15"
+#
+#     # Create disk for backup machine only
+#     machine2.vm.provider "virtualbox" do |vb|
+#         vb.customize ["createhd", "--filename", "backup_disk.vdi", "--size", 2048] # 2048 MB = 2GB
+#         vb.customize ["storageattach", :id, "--storagectl", "SATA Controller", "--port", 1, "--device", 0, "--type", "hdd", "--medium", "backup_disk.vdi"]
+#     end
+#   end
+#
+#   # config.vm.provider "virtualbox" do |vb|
+#   #   vb.memory = "1024"
+#   # end
+#   #
+#   # config.vm.provision "ansible" do |ansible|
+#   #   ansible.playbook = "playbook.yml"
+#   # end
+# end
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "generic/ubuntu2204" # Use your preferred base box
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = "1024" # Adjust memory as needed
+  end
+
+  config.vm.define "client" do |machine1|
+    machine1.vm.hostname = "client"
+    machine1.vm.network "private_network", ip: "192.168.56.10" # Static IP for machine1
+  end
+
+  config.vm.define "backup" do |machine2|
+    machine2.vm.hostname = "backup"
+    machine2.vm.network "private_network", ip: "192.168.56.11" # Static IP for machine2
+    machine2.vm.provider "virtualbox" do |vb|
+      vb.customize ["createhd", "--filename", "machine2_disk", "--size", "2048"] # Create a 2GB disk
+      vb.customize ["storageattach", :id, "--storagectl", "SATA Controller", "--port", "1", "--device", "0", "--type", "hdd", "--medium", "machine2_disk.vdi"] # Attach the disk
+    end
+  end
+
+
+  config.vm.provision "ansible" do |ansible|
+    ansible.playbook = "playbook.yml"
+  end
+
+
+end
