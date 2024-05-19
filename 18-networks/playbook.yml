@@ -1,0 +1,86 @@
+---
+- hosts: inetRouter
+  become: yes
+  tasks:
+    - name: Run command
+      command: touch /root/foo.txt
+
+    - name: Stop ufw service
+      service:
+        name: ufw
+        state: stopped
+
+    - name: Disable ufw service
+      service:
+        name: ufw
+        enabled: no
+
+    - name: Create iptables_rules.ipv4
+      copy:
+          dest: /etc/iptables_rules.ipv4
+          src: ./iptables_rules.ipv4
+          owner: root
+          group: root
+          mode: '0644'
+
+    - name: Create iptables file
+      copy:
+          dest: /etc/network/if-up.d/iptables
+          src: ./iptables
+          owner: root
+          group: root
+          mode: '0755'
+    - name: Run script
+      command: /etc/network/if-up.d/iptables
+
+- hosts: inetRouter, office1Router, office2Router, centralRouter
+  become: yes 
+  tasks:
+    - name: set up forward packages across routers
+      sysctl:
+        name: net.ipv4.conf.all.forwarding
+        value: '1'
+        state: present
+#
+#
+- hosts: centralServer, office1Server, office2Server, office1Router, office2Router, centralRouter, 
+  become: yes
+  tasks:
+    - name: disable default route
+      template: 
+        src: 00-installer-config.yaml
+        dest: /etc/netplan/00-installer-config.yaml
+        owner: root
+        group: root
+        mode: 0644
+
+- hosts: centralServer, office1Server, office2Server, office1Router, office2Router, centralRouter, inetRouter
+  become: yes
+  tasks:
+    - name: Set the hostname
+      hostname:
+        name: "{{inventory_hostname}}"
+
+
+# - hosts: centralServer, office1Server, office2Server, office1Router, office2Router, centralRouter, inetRouter
+#   become: yes
+#   tasks:
+#     - name: Fetch the files
+#       fetch:
+#         dest: "50-vagrant_{{inventory_hostname}}.yaml"
+#         src: /etc/netplan/50-vagrant.yaml
+#         flat: yes
+
+
+# - hosts: centralServer, office1Server, office2Server, office1Router, office2Router, centralRouter, inetRouter
+#   become: yes
+#   tasks:
+#   - name: Copy netplan files
+#     copy:
+#       src: "50-vagrant_{{ansible_hostname}}.yaml"
+#       dest: /etc/netplan/50-vagrant.yaml
+#       owner: root
+#       mode: '0644'
+#
+#   - name: Run command
+#     command: netplan apply
