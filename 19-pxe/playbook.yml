@@ -1,0 +1,109 @@
+---
+- hosts: inetRouter
+  become: yes
+  tasks:
+    - name: Run command
+      command: touch /root/foo.txt
+
+    - name: Stop ufw service
+      service:
+        name: ufw
+        state: stopped
+
+    - name: Disable ufw service
+      service:
+        name: ufw
+        enabled: no
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install dnsmasq
+      apt:
+        name: dnsmasq
+        state: present
+
+    - name: Install Apache
+      apt:
+        name: apache2
+        state: present
+
+    - name: Create directory
+      file:
+        path: /srv/images
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: copy pxe.conf
+      copy:
+          dest: /etc/dnsmasq.d/pxe.conf
+          src: ./pxe.conf
+          owner: root
+          group: root
+          mode: '0644'
+
+    - name: Ensure tftp directory exists
+      file:
+        path: /srv/tftp
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Download Ubuntu netboot archive
+      get_url:
+        url: https://releases.ubuntu.com/noble/ubuntu-24.04-netboot-amd64.tar.gz
+        dest: /tmp/ubuntu-24.04-netboot-amd64.tar.gz
+        mode: '0755'
+
+    - name: Extract archive
+      unarchive:
+        src: /tmp/ubuntu-24.04-netboot-amd64.tar.gz
+        dest: /srv/tftp
+        remote_src: yes
+
+    - name: Remove downloaded archive
+      file:
+        path: /tmp/ubuntu-24.04-netboot-amd64.tar.gz
+        state: absent
+
+    - name: Download server iso
+      get_url:
+        url: http://cdimage.ubuntu.com/ubuntu-server/daily-live/current/oracular-live-server-amd64.iso
+        dest: /srv/images
+        mode: '0755'
+
+
+    - name: ks-server.conf
+      copy:
+          dest: /etc/apache2/sites-available/ks-server.conf
+          src: ./ks-server.conf
+          owner: root
+          group: root
+          mode: '0644'
+
+
+    - name: Enable the site
+      command: a2ensite ks-server.conf
+      # args:
+      #   creates: /etc/apache2/sites-enabled/ks-server.conf
+
+    - name: copy default file
+      copy:
+          dest: /srv/tftp/amd64/pxelinux.cfg/default
+          src: ./default
+          owner: root
+          group: root
+          mode: '0644'
+
+
+    - name: Restart Apache2
+      ansible.builtin.systemd:
+        name: apache2
+        state: restarted
+
+
+
