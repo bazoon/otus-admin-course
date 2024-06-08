@@ -1,0 +1,138 @@
+---
+- hosts: inetRouter
+  become: yes
+  tasks:
+    - name: Block port 22
+      ansible.builtin.iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 22
+        source: 192.168.255.2
+        jump: DROP
+
+    - name: Ensure /etc/iptables exists
+      become: yes
+      file:
+        path: /etc/iptables
+        state: directory
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Ensure /etc/iptables/rules.v4 exists
+      become: yes
+      file:
+        path: /etc/iptables/rules.v4
+        state: touch
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Save iptables rules
+      ansible.builtin.shell: iptables-save > /etc/iptables/rules.v4
+
+    - name: Install knockd
+      apt:
+        name: knockd
+        state: present
+
+    - name: Install nmap
+      apt:
+        name: nmap
+        state: present
+
+
+    - name: Copy knockd configuration
+      copy:
+        src: ./knockd.conf
+        dest: /etc/knockd.conf
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Start and enable knockd
+      service:
+        name: knockd
+        state: started
+        enabled: yes
+
+
+    - name: Copy knock script
+      copy:
+        src: ./knock.sh
+        dest: /root
+        owner: root
+        group: root
+        mode: 0644
+
+
+- hosts: centralRouter
+  become: yes
+  tasks:
+    - name: Copy knock script
+      copy:
+        src: ./knock.sh
+        dest: /root
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: Install nmap
+      apt:
+        name: nmap
+        state: present
+
+- hosts: centralServer
+  become: yes
+  tasks:
+    - name: set up forward packages across routers
+      sysctl:
+        name: net.ipv4.conf.all.forwarding
+        value: '1'
+        state: present
+
+    - name: Copy knockd configuration
+      copy:
+        src: ./list
+        dest: /etc/apt/sources.list
+        owner: root
+        group: root
+        mode: 0644
+        force: yes
+
+    - name: ensure nginx is at the latest version
+      apt:
+        name: nginx
+        state: latest
+    - name: start nginx
+      service: 
+        name: nginx
+        state: started
+        enabled: yes  # if 
+
+#
+
+- hosts: inetRouter2
+  become: yes
+  tasks:
+    - name: set up forward packages across routers
+      sysctl:
+        name: net.ipv4.conf.all.forwarding
+        value: '1'
+        state: present
+
+    - name: Ensure iptables is installed
+      package:
+        name: iptables
+        state: present
+    - name: Copy file to remote host
+      copy:
+        src: ./iptable-inetRouter2
+        dest: /root/iptable-inetRouter2
+        owner: root
+        group: root
+        mode: '0644'
+    - name: restore iptables 
+      shell: iptables-restore < /root/iptable-inetRouter2
+
+
