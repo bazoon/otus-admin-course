@@ -1,0 +1,68 @@
+key="ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCs77c/2ddpmVSjkJG1rFYB0uxXOjK5asqP5jmEIHtvCeyvTcYU3vJyPj729fygXPbHeDL7wbFIEQMrLB40PL+I+E/i1R+1Htu8iHGFfj+TBAKblAST+8mReaVKnywDN1kxoGFTa93aWM6J8G3i9hKnZ9NeZT+5ream5cFHz4ZWZrC6U4UAiCsFEXLci2iQdDBMWqJHlCvPack7WNygkIC+iSYSE7Bt2FHNxYbmtYnhL2lPaZjUSnhA57/sgAt/AlXC/v8t9VXHnqfxwrxFuvGr391psLeymTk5DEBChhXkKUmahom0s8QMMGgIwrOPKWYwacAyOjV9B+l2no4hGxq9K+rhLtCARz0Geu9FwSYBcXajsnxQpzvXMVTauNTjvk/j1RSzcgs3ADrPwiCTN3dnjTcOc14Oo79pE0MORdlcey1rH1KOWTOJXjRknPqepvsNt8PFBQD3vQ+14hqZWgxxaqTdFx5nKTJoQTapEGb79/7W+l0Dlpqi9GOCVrJc3eE= vn@Home"
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "generic/ubuntu2204"
+
+  config.vm.define "inetRouter" do |inetRouter|
+    inetRouter.vm.hostname = "inetRouter" 
+    inetRouter.vm.network "private_network", ip: "192.168.255.1", netmask: "255.255.255.252", virtualbox__intnet: "router-net"
+    inetRouter.vm.network "private_network", ip: "192.168.50.10", netmask: "255.255.255.0"
+
+    inetRouter.vm.provision "shell", inline: <<-SHELL
+      mkdir -p ~/.ssh
+      echo "#{key}" >> ~/.ssh/authorized_keys
+      chmod 700 ~/.ssh
+      chmod 600 ~/.ssh/authorized_keys
+    SHELL
+
+  end
+
+  config.vm.define "centralRouter" do |centralRouter|
+    centralRouter.vm.hostname = "centralRouter" 
+    centralRouter.vm.network "private_network",  ip: '192.168.255.2', adapter: 2, netmask: "255.255.255.252", virtualbox__intnet: "router-net"
+    centralRouter.vm.network "private_network", ip: '192.168.0.1', adapter: 3, netmask: "255.255.255.240", virtualbox__intnet: "dir-net"
+
+    centralRouter.vm.provision "shell", inline: <<-SHELL
+      mkdir -p ~/.ssh
+      echo "#{key}" >> ~/.ssh/authorized_keys
+      chmod 700 ~/.ssh
+      chmod 600 ~/.ssh/authorized_keys
+    SHELL
+  end
+
+
+  config.vm.define "inetRouter2" do |inetRouter|
+    inetRouter.vm.hostname = "inetRouter" 
+    inetRouter.vm.network "private_network", ip: "192.168.1.17", netmask: "255.255.255.240", virtualbox__intnet: "router-net2"
+    inetRouter.vm.network "private_network", ip: "192.168.50.19", netmask: "255.255.255.0"
+
+    inetRouter.vm.provision "shell", inline: <<-SHELL
+      mkdir -p ~/.ssh
+      echo "#{key}" >> ~/.ssh/authorized_keys
+      chmod 700 ~/.ssh
+      chmod 600 ~/.ssh/authorized_keys
+    SHELL
+  end
+
+
+  config.vm.define "centralServer" do |centralServer|
+    centralServer.vm.hostname = "centralServer" 
+    centralServer.vm.network "private_network", ip: '192.168.0.2', adapter: 2, netmask: "255.255.255.240", virtualbox__intnet: "dir-net"
+    centralServer.vm.network "private_network", ip: "192.168.1.18", netmask: "255.255.255.240", virtualbox__intnet: "router-net2"
+    centralServer.vm.network "private_network", ip: '192.168.50.12', adapter: 3, netmask: "255.255.255.0"
+
+    centralServer.vm.provision "shell", inline: <<-SHELL
+      mkdir -p ~/.ssh
+      echo "#{key}" >> ~/.ssh/authorized_keys
+      chmod 700 ~/.ssh
+      chmod 600 ~/.ssh/authorized_keys
+    SHELL
+
+  end
+
+
+  config.vm.provision "ansible" do |ansible|
+    ansible.playbook = "playbook.yml"
+  end
+
+end
