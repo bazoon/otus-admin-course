@@ -1,0 +1,7 @@
+sudo iptables -t nat -A PREROUTING -i ens5 -p tcp --dport 8080 -j DNAT --to-destination 187.205.0.2:80
+sudo iptables -t nat -A POSTROUTING -j MASQUERADE
+
+
+
+sudo iptables -t nat -A PREROUTING -i eth1 -p tcp --dport 8080 -j DNAT --to-destination 192.168.255.5:8080
+sudo iptables -t nat -A POSTROUTING -j MASQUERADE

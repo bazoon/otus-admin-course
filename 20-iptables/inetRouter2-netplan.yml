@@ -1,0 +1,20 @@
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    eth0:
+      dhcp4: no
+      routes: []
+    eth1:
+      dhcp4: no
+      addresses: 
+      - 192.168.252.2/28
+      routes:
+        - to: default
+          via: 192.168.255.1
+        - to: 192.168.0.2
+          via: 192.168.255.5
+
+
+
+
