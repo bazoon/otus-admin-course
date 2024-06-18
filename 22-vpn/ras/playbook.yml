@@ -1,0 +1,49 @@
+---
+- hosts: server
+  become: yes
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install openvpn
+      apt:
+        name: openvpn
+        state: present
+
+    - name: Install iperf3
+      apt:
+        name: easy-rsa
+        state: present
+
+    - name: Change directory to OpenVPN configuration
+      ansible.builtin.shell: cd /etc/openvpn
+
+    - name: Initialize PKI
+      ansible.builtin.shell: /usr/share/easy-rsa/easyrsa init-pki
+
+
+    - name: Copy server.conf
+      copy:
+        src: ./server.conf
+        dest: /etc/openvpn/server.conf
+        owner: root
+        group: root
+        mode: 0644
+    
+    - name: Copy service file
+      copy:
+        src: ./openvpn@.service
+        dest: /etc/systemd/system/openvpn@.service
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Start OpenVPN service
+      ansible.builtin.systemd:
+        name: openvpn@server
+        state: started
+        enabled: yes
+
+
+
