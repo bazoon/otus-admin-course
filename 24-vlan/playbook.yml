@@ -1,0 +1,91 @@
+---
+- hosts: inetRouter, centralRouter, office1Router, testClient1, testServer1
+  become: yes
+  tasks:
+    - name: install
+      yum:
+          name:
+            - vim
+            - traceroute
+            - tcpdump
+            - net-tools
+          state: present
+          update_cache: true
+
+
+- hosts: testClient2, testServer2
+  become: yes
+  tasks:
+    - name: install
+      apt:
+          name:
+            - vim
+            - traceroute
+            - tcpdump
+            - net-tools
+          state: present
+          update_cache: true
+
+- hosts: testClient1
+  become: yes
+  tasks:
+    - name: copy 
+      copy: src=./ifcfg-vlan-tcl1 dest=/etc/sysconfig/network-scripts/ifcfg-vlan1
+    - name: Restart NetworkManager service
+      systemd:
+        name: NetworkManager
+        state: restarted
+
+- hosts: testServer1
+  become: yes
+  tasks:
+    - name: copy 
+      copy: src=./ifcfg-vlan-ts1 dest=/etc/sysconfig/network-scripts/ifcfg-vlan1
+    - name: Restart NetworkManager service
+      systemd:
+        name: NetworkManager
+        state: restarted
+
+- hosts: testClient2
+  become: yes
+  tasks:
+    - name: copy 
+      copy: src=./netplan-cl2 dest=/etc/netplan/50-cloud-init.yaml
+    - name: Apply netplan configuration
+      command: netplan apply
+      tags: netplan
+
+- hosts: testServer2
+  become: yes
+  tasks:
+    - name: copy 
+      copy: src=./netplan-sv2 dest=/etc/netplan/50-cloud-init.yaml
+    - name: Apply netplan configuration
+      command: netplan apply
+      tags: netplan
+
+- hosts: inetRouter, centralRouter
+  become: yes
+  tasks:
+    - name: copy ifcfg1
+      copy: src=./ifcfg-eth1 dest=/etc/sysconfig/network-scripts/ifcfg-eth1
+    - name: copy ifcfg2
+      copy: src=./ifcfg-eth2 dest=/etc/sysconfig/network-scripts/ifcfg-eth2
+
+- hosts: inetRouter
+  become: yes
+  tasks:
+    - name: copy bond
+      copy: src=./ifcfg-bond-inet dest=/etc/sysconfig/network-scripts/ifcfg-bond0
+    - name: restart hosts for bond0
+      reboot:
+        reboot_timeout: 3600
+
+- hosts: centralRouter
+  become: yes
+  tasks:
+    - name: copy bond
+      copy: src=./ifcfg-bond-central dest=/etc/sysconfig/network-scripts/ifcfg-bond0
+    - name: restart hosts for bond0
+      reboot:
+        reboot_timeout: 3600
