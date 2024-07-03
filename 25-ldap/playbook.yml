@@ -1,0 +1,46 @@
+---
+- hosts: client1, client2
+  become: yes
+  tasks:
+    - name: Set timezone to Europe/Moscow
+      community.general.timezone:
+        name: Europe/Moscow
+
+    - name: Install chrony
+      ansible.builtin.yum:
+        name: chrony
+        state: present
+
+    - name: Enable and start chronyd service
+      ansible.builtin.systemd:
+        name: chronyd
+        enabled: yes
+        state: started
+
+    - name: Stop and disable firewalld
+      systemd:
+        name: firewalld
+        state: stopped
+        enabled: no
+
+
+    - name: disable SElinux now
+      shell: setenforce 0
+
+    - name: Set SELinux to permissive mode
+      selinux:
+        state: disabled
+
+    - name: Ensure the record is in /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        line: '192.168.50.2 ipa.otus.lan'
+        state: present
+
+    - name: Ensure FreeIPA Client is installed
+      yum:
+        name: freeipa-client
+        state: present
+
+    - name: add host to ipa-server
+      shell: echo -e "yes\nyes" | ipa-client-install --mkhomedir --domain=OTUS.LAN --server=ipa.otus.lan --no-ntp -p admin -w 11111111
